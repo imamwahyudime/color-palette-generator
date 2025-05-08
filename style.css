@@ -1,0 +1,77 @@
+body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #f4f4f4;
+    color: #333;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+h1 {
+    margin-bottom: 30px;
+    color: #222;
+}
+
+.palette-container {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 20px; /* Space between color boxes */
+    margin-bottom: 30px;
+    justify-content: center; /* Center boxes if they don't fill the width */
+}
+
+.color-box {
+    width: 150px;
+    height: 150px;
+    background-color: #ccc; /* Default background */
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-end; /* Align content (hex code) to the bottom */
+    justify-content: center;
+    padding: 10px;
+    box-sizing: border-box;
+    cursor: pointer; /* Indicate it's clickable (for copying) */
+    transition: transform 0.2s ease-in-out; /* Simple hover effect */
+    position: relative; /* Needed for absolute positioning of hex code */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.color-box:hover {
+    transform: translateY(-5px);
+}
+
+.hex-code {
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent dark background for readability */
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    pointer-events: none; /* Don't interfere with color box click */
+    /* Position it at the bottom center */
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+
+#generate-button {
+    padding: 12px 25px;
+    font-size: 1em;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+#generate-button:hover {
+    background-color: #0056b3;
+}
