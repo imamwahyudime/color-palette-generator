@@ -11,10 +11,11 @@ body {
     box-sizing: border-box;
 }
 
-h1, h2 {
+h1, h2, h3 {
     margin-bottom: 20px;
     color: #222;
     text-align: center;
+    width: 100%; /* Ensure headings take full width in their container */
 }
 
 h2 {
@@ -22,27 +23,37 @@ h2 {
     margin-bottom: 15px;
 }
 
+h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
 hr {
     width: 80%;
     border: none;
     border-top: 1px solid #ccc;
-    margin: 40px 0;
+    margin: 40px auto; /* Center the HR */
 }
 
 
 .palette-container,
-.saved-palette-container {
+.saved-palette-container,
+.history-list { /* Apply flexbox to history lists too */
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
-    margin-bottom: 30px;
+    gap: 15px; /* Slightly smaller gap for history */
+    margin-bottom: 20px; /* Slightly less margin below history lists */
     justify-content: center;
     width: 100%; /* Allow containers to take more width */
     max-width: 900px; /* Max width for containers */
-    min-height: 170px; /* Give containers a minimum height to be drop targets */
+    min-height: 100px; /* Give history containers a minimum height */
     padding: 10px; /* Add padding for drop zone visual */
     border: 2px dashed transparent; /* Default border for drop zone */
     transition: border-color 0.2s ease;
+    background-color: #fff; /* Add a background to history lists */
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* Style for valid drop zones when dragging over */
@@ -51,34 +62,43 @@ hr {
 }
 
 .color-box,
-.saved-color-box {
+.saved-color-box,
+.history-color-box { /* Add class for history color boxes */
     width: 150px;
     height: 150px;
     background-color: #ccc;
     border-radius: 8px;
     display: flex;
-    flex-direction: column; /* Arrange items vertically */
+    flex-direction: column;
     align-items: center;
-    justify-content: flex-end; /* Align content (hex code) to the bottom */
+    justify-content: flex-end;
     padding: 10px;
     box-sizing: border-box;
-    transition: transform 0.2s ease-in-out, opacity 0.2s ease; /* Add opacity transition */
+    transition: transform 0.2s ease-in-out, opacity 0.2s ease;
     position: relative;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden; /* Hide anything that might overflow */
+    overflow: hidden;
     cursor: grab; /* Indicate draggable */
 }
 
+/* Style for history color boxes - smaller size */
+.history-color-box {
+    width: 80px;
+    height: 80px;
+    padding: 5px; /* Adjust padding for smaller size */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+
 .color-box:hover,
-.saved-color-box:hover {
+.saved-color-box:hover,
+.history-color-box:hover { /* Apply hover to history boxes */
     transform: translateY(-5px);
 }
 
 /* Style for the item being dragged */
 .dragging {
     opacity: 0.5; /* Make the original item semi-transparent */
-    /* Optional: Add a different border or shadow */
-    /* border: 2px solid #007bff; */
 }
 
 
@@ -89,20 +109,27 @@ hr {
     border-radius: 4px;
     font-size: 0.9em;
     text-transform: uppercase;
-    position: relative; /* Change from absolute to relative */
-    bottom: 0; /* Remove bottom positioning */
-    left: auto; /* Remove left positioning */
-    transform: none; /* Remove transform */
-    margin-top: auto; /* Push to the bottom using flexbox */
-    cursor: pointer; /* Add pointer cursor to hex code */
-    transition: background-color 0.2s ease, color 0.2s ease; /* Smooth transition for hover */
-    z-index: 1; /* Ensure it's above the color box background */
+    position: relative;
+    bottom: 0;
+    left: auto;
+    transform: none;
+    margin-top: auto;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    z-index: 1;
 }
+
+/* Adjust hex code size for history boxes */
+.history-color-box .hex-code {
+    font-size: 0.7em; /* Smaller font size */
+    padding: 3px 6px; /* Adjust padding */
+}
+
 
 /* Hover effect for hex code */
 .hex-code:hover {
     background-color: rgba(0, 0, 0, 0.8);
-    text-decoration: underline; /* Optional: Add underline on hover */
+    text-decoration: underline;
 }
 
 /* Style for the "Copied!" feedback text */
@@ -116,8 +143,8 @@ hr {
 /* Style for the save button/icon on generated colors */
 .save-button {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 5px; /* Adjust position for smaller padding */
+    right: 5px; /* Adjust position for smaller padding */
     background-color: rgba(255, 255, 255, 0.8);
     border: none;
     border-radius: 4px;
@@ -125,7 +152,7 @@ hr {
     cursor: pointer;
     font-size: 1em;
     line-height: 1;
-    z-index: 2; /* Ensure it's above hex code */
+    z-index: 2;
     transition: background-color 0.2s ease;
 }
 
@@ -136,8 +163,8 @@ hr {
 /* Style for the remove button/icon on saved colors */
 .remove-button {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 5px; /* Adjust position for smaller padding */
+    right: 5px; /* Adjust position for smaller padding */
     background-color: rgba(255, 0, 0, 0.8);
     color: white;
     border: none;
@@ -164,15 +191,58 @@ hr {
     border: none;
     border-radius: 5px;
     transition: background-color 0.3s ease;
-    display: block; /* Make button a block element */
-    margin: 20px auto; /* Center the button */
+    display: block;
+    margin: 20px auto;
 }
 
 #generate-button:hover {
     background-color: #0056b3;
 }
 
-.no-saved-message {
+/* Style for the history toggle button */
+#history-toggle-button {
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+    background-color: #6c757d; /* Grey color */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    display: block;
+    margin: 20px auto;
+}
+
+#history-toggle-button:hover {
+    background-color: #5a6268;
+}
+
+#history-toggle-button .hamburger-icon {
+    margin-right: 8px;
+}
+
+
+/* Style for the history sections container */
+#history-sections {
+    width: 100%;
+    max-width: 900px;
+    transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+    overflow: hidden; /* Hide content when collapsed */
+}
+
+/* Class to hide the history sections */
+.history-sections-hidden {
+    max-height: 0; /* Collapse the height */
+    opacity: 0; /* Make it invisible */
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Style for the "No saved colors yet" and "No history yet" messages */
+.no-saved-message,
+.no-history-message {
     text-align: center;
     width: 100%;
     color: #666;
@@ -182,4 +252,14 @@ hr {
 /* Hide the message if there are saved colors */
 .saved-palette-container:not(:empty) .no-saved-message {
     display: none;
+}
+
+/* Hide the message if there is generated history */
+.generated-history-container:not(:empty) .no-history-message {
+     display: none;
+}
+
+/* Hide the message if there is deleted history */
+.deleted-history-container:not(:empty) .no-history-message {
+     display: none;
 }

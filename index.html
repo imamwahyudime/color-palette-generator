@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Color Palette Generator</title>
-    <link rel="stylesheet" href="style.css?v=0001">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -35,7 +35,23 @@
         <p class="no-saved-message">No saved colors yet.</p>
     </div>
 
+    <hr> <button id="history-toggle-button" aria-expanded="false" aria-controls="history-sections">
+        <span class="hamburger-icon">☰</span> History
+    </button>
 
-    <script src="script.js?v=0001"></script>
+    <div id="history-sections" class="history-sections-hidden" aria-hidden="true">
+        <hr> <h3>Generated History (Last 15)</h3>
+        <div class="generated-history-container history-list">
+            <p class="no-history-message">No generated history yet.</p>
+        </div>
+
+        <hr> <h3>Deleted History (Last 10)</h3>
+        <div class="deleted-history-container history-list">
+             <p class="no-history-message">No deleted history yet.</p>
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
 </body>
 </html>

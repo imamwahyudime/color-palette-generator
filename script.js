@@ -1,10 +1,20 @@
 // Get references to the DOM elements
 const paletteContainer = document.querySelector('.palette-container');
 const savedPaletteContainer = document.querySelector('.saved-palette-container');
+const generatedHistoryContainer = document.querySelector('.generated-history-container');
+const deletedHistoryContainer = document.querySelector('.deleted-history-container');
 const generateButton = document.getElementById('generate-button');
+const historyToggleButton = document.getElementById('history-toggle-button');
+const historySections = document.getElementById('history-sections');
 
-// Define the localStorage key
+// Define the localStorage keys
 const SAVED_COLORS_STORAGE_KEY = 'colorPaletteGeneratorSavedColors';
+const GENERATED_HISTORY_STORAGE_KEY = 'colorPaletteGeneratorGeneratedHistory';
+const DELETED_HISTORY_STORAGE_KEY = 'colorPaletteGeneratorDeletedHistory';
+
+// Define history limits
+const GENERATED_HISTORY_LIMIT = 15;
+const DELETED_HISTORY_LIMIT = 10;
 
 // --- localStorage Functions ---
 function getSavedColors() {
@@ -15,6 +25,29 @@ function getSavedColors() {
 function saveColors(colors) {
     localStorage.setItem(SAVED_COLORS_STORAGE_KEY, JSON.stringify(colors));
 }
+
+function getGeneratedHistory() {
+    const historyString = localStorage.getItem(GENERATED_HISTORY_STORAGE_KEY);
+    return historyString ? JSON.parse(historyString) : [];
+}
+
+function saveGeneratedHistory(history) {
+    // Keep only the last GENERATED_HISTORY_LIMIT items
+    const limitedHistory = history.slice(-GENERATED_HISTORY_LIMIT);
+    localStorage.setItem(GENERATED_HISTORY_STORAGE_KEY, JSON.stringify(limitedHistory));
+}
+
+function getDeletedHistory() {
+    const historyString = localStorage.getItem(DELETED_HISTORY_STORAGE_KEY);
+    return historyString ? JSON.parse(historyString) : [];
+}
+
+function saveDeletedHistory(history) {
+    // Keep only the last DELETED_HISTORY_LIMIT items
+    const limitedHistory = history.slice(-DELETED_HISTORY_LIMIT);
+    localStorage.setItem(DELETED_HISTORY_STORAGE_KEY, JSON.stringify(limitedHistory));
+}
+
 
 // --- Color Generation ---
 function getRandomColor() {
@@ -101,7 +134,14 @@ let dragSourceContainer = null; // To store the container the item started in
 
 function handleDragStart(event) {
     draggedItem = event.target;
-    dragSourceContainer = event.target.closest('.palette-container') || event.target.closest('.saved-palette-container');
+    dragSourceContainer = event.target.closest('.palette-container') || event.target.closest('.saved-palette-container') || event.target.closest('.history-list');
+
+    // Only allow dragging from generated or saved containers
+    if (!dragSourceContainer || dragSourceContainer.classList.contains('history-list')) {
+         event.preventDefault(); // Prevent dragging from history
+         return;
+    }
+
 
     // Set the data to be transferred (the color hex code and source container ID)
     const color = rgbToHex(draggedItem.style.backgroundColor);
@@ -120,13 +160,17 @@ function handleDragStart(event) {
 function handleDragOver(event) {
     event.preventDefault(); // Necessary to allow dropping
 
-    // Add visual feedback to the potential drop target
-    event.target.closest('.palette-container')?.classList.add('drag-over');
-    event.target.closest('.saved-palette-container')?.classList.add('drag-over');
+    // Add visual feedback to the potential drop target containers
+    const targetContainer = event.target.closest('.palette-container') || event.target.closest('.saved-palette-container');
+
+    // Only add drag-over class to valid drop targets
+    if (targetContainer) {
+         targetContainer.classList.add('drag-over');
+    }
+
 
     // --- Reordering logic within the saved container ---
-    const targetContainer = event.target.closest('.saved-palette-container');
-    if (targetContainer && dragSourceContainer === savedPaletteContainer) {
+    if (targetContainer === savedPaletteContainer && dragSourceContainer === savedPaletteContainer) {
         const afterElement = getDragAfterElement(targetContainer, event.clientY);
         const draggable = document.querySelector('.dragging'); // The element currently being dragged
 
@@ -148,16 +192,26 @@ function handleDrop(event) {
     event.preventDefault(); // Necessary to allow dropping
 
     // Remove drag-over feedback
-    event.target.closest('.palette-container')?.classList.remove('drag-over');
-    event.target.closest('.saved-palette-container')?.classList.remove('drag-over');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
 
     const color = event.dataTransfer.getData('text/plain');
     const sourceContainerType = event.dataTransfer.getData('text/source-container');
     const targetContainer = event.target.closest('.palette-container') || event.target.closest('.saved-palette-container');
 
     if (!targetContainer) {
-        // Dropped outside of a valid container
-        console.log("Dropped outside valid container");
+        // Dropped outside of a valid container (or on history)
+        console.log("Dropped outside valid container or on history");
+         // If dropped outside, and it was from generated, replace it.
+         if (sourceContainerType === 'generated' && draggedItem && draggedItem.parentNode === dragSourceContainer) {
+              const originalIndex = Array.from(dragSourceContainer.children).indexOf(draggedItem);
+                if (originalIndex !== -1) {
+                    const newColor = getRandomColor();
+                    const newColorBox = createColorBox(newColor);
+                    dragSourceContainer.replaceChild(newColorBox, draggedItem);
+                }
+         }
+         // If dropped outside and it was from saved, just return it visually (handled by dragend)
         return;
     }
 
@@ -179,6 +233,8 @@ function handleDrop(event) {
                 const newColor = getRandomColor();
                 const newColorBox = createColorBox(newColor);
                 dragSourceContainer.replaceChild(newColorBox, draggedItem);
+                 // Add the original color to generated history
+                 addGeneratedToHistory(color);
             }
              console.log(`Saved color from generated: ${hexColorToSave}`);
         } else {
@@ -189,6 +245,8 @@ function handleDrop(event) {
                 const newColor = getRandomColor();
                 const newColorBox = createColorBox(newColor);
                 dragSourceContainer.replaceChild(newColorBox, draggedItem);
+                 // Add the original color to generated history
+                 addGeneratedToHistory(color);
             }
         }
     }
@@ -224,6 +282,9 @@ function handleDrop(event) {
         renderSavedColors(); // Update the saved display
         console.log(`Removed color from saved: ${colorToRemove}`);
 
+         // Add the deleted color to deleted history
+         addDeletedToHistory(colorToRemove);
+
          // The dragged item is still in the generated container visually due to dragover.
          // We need to remove it from the DOM or replace it if necessary.
          // Since we are conceptually deleting it, we don't replace the spot in generated.
@@ -233,9 +294,8 @@ function handleDrop(event) {
          }
     }
 
-    // If dragging from generated to generated, or saved to generated (but not dropping on generated),
-    // the dragged item will just return to its original position visually because the drop wasn't handled.
-    // We don't need explicit logic for these cases unless we want custom behavior.
+    // If dragging from generated to generated, the dragged item will just return visually
+    // because the drop wasn't handled specifically for this case.
 }
 
 function handleDragEnd() {
@@ -246,11 +306,24 @@ function handleDragEnd() {
     // Remove drag-over feedback from all containers
     document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
 
+    // If the item was dragged from saved and not successfully dropped on generated,
+    // it might still be visually in the generated container due to dragover.
+    // We need to ensure it's removed from there if it wasn't successfully deleted.
+     if (dragSourceContainer && dragSourceContainer.classList.contains('saved-palette-container')) {
+         if (draggedItem && draggedItem.parentNode === paletteContainer) {
+             draggedItem.remove(); // Remove it from the generated container if it ended up there
+         }
+     }
+
+
     draggedItem = null;
     dragSourceContainer = null;
 
     // After drag end, especially for saved to saved, re-render to ensure DOM matches localStorage
-    renderSavedColors(); // This helps synchronize the visual order with the saved order
+    // This also handles the case where a saved item was dragged but not dropped on generated.
+    renderSavedColors();
+    renderGeneratedHistory(); // Also re-render history just in case
+    renderDeletedHistory();
 }
 
 // Helper function to find the element after the current mouse position during dragover
@@ -415,7 +488,9 @@ function createSavedColorBox(color) {
 
         saveColors(savedColors);
         renderSavedColors(); // Update the saved display
-        console.log(`Removed: ${colorToRemove}`);
+        console.log(`Removed color from saved: ${colorToRemove}`);
+         // Add the removed color to deleted history
+         addDeletedToHistory(colorToRemove);
     });
 
      // Click on the saved box background currently does nothing
@@ -434,9 +509,89 @@ function createSavedColorBox(color) {
     return colorBox;
 }
 
+// Function to create a color box element for the HISTORY lists
+function createHistoryColorBox(color) {
+     const colorBox = document.createElement('div');
+    colorBox.classList.add('history-color-box'); // Use the history class
+    colorBox.style.backgroundColor = color;
+    // History items are not draggable back to main palettes in this implementation
+
+    const hexCodeSpan = document.createElement('span');
+    hexCodeSpan.classList.add('hex-code'); // Use the same hex-code class for styling
+    hexCodeSpan.textContent = color;
+    hexCodeSpan.title = "Click to copy"; // Add a default tooltip title
+
+     // --- Event Listeners for History Box ---
+
+     // Click on hex code copies the color
+    hexCodeSpan.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent any parent clicks
+        copyToClipboard(hexCodeSpan.textContent, hexCodeSpan); // Pass hexCodeSpan for feedback
+    });
+
+     // Click on the history box background currently does nothing
+     // colorBox.addEventListener('click', () => {
+     //    // No action on clicking the history color box background
+     // });
+
+
+    colorBox.appendChild(hexCodeSpan);
+
+    return colorBox;
+}
+
+
+// --- History Management Functions ---
+
+// Add a color to the generated history
+function addGeneratedToHistory(color) {
+    let history = getGeneratedHistory();
+    const hexColor = rgbToHex(color);
+
+    // Add to the end of the array (most recent last)
+    history.push(hexColor);
+
+    // Remove duplicates (keeping the most recent one)
+    history = history.filter((item, index, self) =>
+        index === self.findIndex((t) => t === item)
+    );
+
+    saveGeneratedHistory(history); // This will now save the last 15 after push
+    renderGeneratedHistory();
+}
+
+// Add a color to the deleted history
+function addDeletedToHistory(color) {
+    let history = getDeletedHistory();
+    const hexColor = rgbToHex(color);
+
+    // Add to the end of the array (most recent last)
+    history.push(hexColor);
+
+     // Remove duplicates (keeping the most recent one)
+    history = history.filter((item, index, self) =>
+        index === self.findIndex((t) => t === item)
+    );
+
+    saveDeletedHistory(history); // This will now save the last 10 after push
+    renderDeletedHistory();
+}
+
+
+// --- Rendering Functions ---
 
 // Function to generate and display a new palette
 function generatePalette() {
+    // Before clearing, add the current colors to generated history
+    Array.from(paletteContainer.children).forEach(colorBox => {
+         // Ensure it's a color box and not a placeholder
+        if (colorBox.classList.contains('color-box')) {
+            const color = rgbToHex(colorBox.style.backgroundColor);
+            addGeneratedToHistory(color);
+        }
+    });
+
+
     paletteContainer.innerHTML = ''; // Clear generated section
 
     for (let i = 0; i < 5; i++) {
@@ -465,6 +620,51 @@ function renderSavedColors() {
     }
 }
 
+// Function to render the generated history
+function renderGeneratedHistory() {
+    generatedHistoryContainer.innerHTML = ''; // Clear history section
+
+    const generatedHistory = getGeneratedHistory();
+
+    if (generatedHistory.length === 0) {
+        const noHistoryMessage = document.createElement('p');
+        noHistoryMessage.classList.add('no-history-message');
+        noHistoryMessage.textContent = 'No generated history yet.';
+        generatedHistoryContainer.appendChild(noHistoryMessage);
+    } else {
+        generatedHistory.forEach(color => {
+            const historyColorBox = createHistoryColorBox(color);
+            generatedHistoryContainer.appendChild(historyColorBox);
+        });
+    }
+}
+
+// Function to render the deleted history
+function renderDeletedHistory() {
+    deletedHistoryContainer.innerHTML = ''; // Clear history section
+
+    const deletedHistory = getDeletedHistory();
+
+    if (deletedHistory.length === 0) {
+        const noHistoryMessage = document.createElement('p');
+        noHistoryMessage.classList.add('no-history-message');
+        noHistoryMessage.textContent = 'No deleted history yet.';
+        deletedHistoryContainer.appendChild(noHistoryMessage);
+    } else {
+        deletedHistory.forEach(color => {
+            const historyColorBox = createHistoryColorBox(color);
+            deletedHistoryContainer.appendChild(historyColorBox);
+        });
+    }
+}
+
+// --- History Toggle Functionality ---
+function toggleHistorySections() {
+    const isHidden = historySections.classList.toggle('history-sections-hidden');
+    historyToggleButton.setAttribute('aria-expanded', !isHidden);
+    historySections.setAttribute('aria-hidden', isHidden);
+}
+
 
 // --- Add Drop Zone Event Listeners to Containers ---
 paletteContainer.addEventListener('dragover', handleDragOver);
@@ -475,11 +675,25 @@ savedPaletteContainer.addEventListener('dragover', handleDragOver);
 savedPaletteContainer.addEventListener('dragleave', handleDragLeave);
 savedPaletteContainer.addEventListener('drop', handleDrop);
 
+// History lists are not drop targets in this implementation
+// generatedHistoryContainer.addEventListener('dragover', handleDragOver);
+// generatedHistoryContainer.addEventListener('dragleave', handleDragLeave);
+// generatedHistoryContainer.addEventListener('drop', handleDrop);
+
+// deletedHistoryContainer.addEventListener('dragover', handleDragOver);
+// deletedHistoryContainer.addEventListener('dragleave', handleDragLeave);
+// deletedHistoryContainer.addEventListener('drop', handleDrop);
+
 
 // --- Initialization ---
-// Add event listener to the button
+// Add event listener to the generate button
 generateButton.addEventListener('click', generatePalette);
 
-// Generate an initial palette and load/render saved colors on page load
-generatePalette();
+// Add event listener to the history toggle button
+historyToggleButton.addEventListener('click', toggleHistorySections);
+
+// Generate an initial palette and load/render saved colors and history on page load
+generatePalette(); // This will also add initial colors to history
 renderSavedColors();
+renderGeneratedHistory();
+renderDeletedHistory();
