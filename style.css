@@ -3,7 +3,6 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     min-height: 100vh;
     margin: 0;
     background-color: #f4f4f4;
@@ -12,52 +11,129 @@ body {
     box-sizing: border-box;
 }
 
-h1 {
-    margin-bottom: 30px;
+h1, h2 {
+    margin-bottom: 20px;
     color: #222;
+    text-align: center;
 }
 
-.palette-container {
+h2 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+}
+
+hr {
+    width: 80%;
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 40px 0;
+}
+
+
+.palette-container,
+.saved-palette-container {
     display: flex;
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
-    gap: 20px; /* Space between color boxes */
+    flex-wrap: wrap;
+    gap: 20px;
     margin-bottom: 30px;
-    justify-content: center; /* Center boxes if they don't fill the width */
+    justify-content: center;
+    width: 100%; /* Allow containers to take more width */
+    max-width: 900px; /* Max width for containers */
 }
 
-.color-box {
+.color-box,
+.saved-color-box {
     width: 150px;
     height: 150px;
-    background-color: #ccc; /* Default background */
+    background-color: #ccc;
     border-radius: 8px;
     display: flex;
-    align-items: flex-end; /* Align content (hex code) to the bottom */
+    align-items: flex-end;
     justify-content: center;
     padding: 10px;
     box-sizing: border-box;
-    cursor: pointer; /* Indicate it's clickable (for copying) */
-    transition: transform 0.2s ease-in-out; /* Simple hover effect */
-    position: relative; /* Needed for absolute positioning of hex code */
+    /* cursor: pointer; Removed from the whole box, will add to hex code */
+    transition: transform 0.2s ease-in-out;
+    position: relative;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Hide anything that might overflow */
 }
 
-.color-box:hover {
+.color-box:hover,
+.saved-color-box:hover {
     transform: translateY(-5px);
 }
 
 .hex-code {
-    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent dark background for readability */
+    background-color: rgba(0, 0, 0, 0.6);
     color: #fff;
     padding: 5px 10px;
     border-radius: 4px;
     font-size: 0.9em;
     text-transform: uppercase;
-    pointer-events: none; /* Don't interfere with color box click */
-    /* Position it at the bottom center */
+    /* pointer-events: none; Removed so it's clickable */
     position: absolute;
     bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
+    cursor: pointer; /* Add pointer cursor to hex code */
+    transition: background-color 0.2s ease, color 0.2s ease; /* Smooth transition for hover */
+    z-index: 1; /* Ensure it's above the color box background */
+}
+
+/* Hover effect for hex code */
+.hex-code:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    text-decoration: underline; /* Optional: Add underline on hover */
+}
+
+/* Style for the "Copied!" feedback text */
+.hex-code.copied-feedback {
+    background-color: #28a745; /* Green background */
+    color: white;
+    font-weight: bold;
+}
+
+
+/* Style for the save button/icon on generated colors */
+.save-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 6px;
+    cursor: pointer;
+    font-size: 1em;
+    line-height: 1;
+    z-index: 2; /* Ensure it's above hex code */
+    transition: background-color 0.2s ease;
+}
+
+.save-button:hover {
+    background-color: rgba(255, 255, 255, 1);
+}
+
+/* Style for the remove button/icon on saved colors */
+.remove-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(255, 0, 0, 0.8);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 3px 6px;
+    cursor: pointer;
+    font-size: 1em;
+    line-height: 1;
+    z-index: 2; /* Ensure it's above hex code */
+    transition: background-color 0.2s ease;
+}
+
+.remove-button:hover {
+     background-color: rgba(255, 0, 0, 1);
 }
 
 
@@ -70,8 +146,22 @@ h1 {
     border: none;
     border-radius: 5px;
     transition: background-color 0.3s ease;
+    display: block; /* Make button a block element */
+    margin: 20px auto; /* Center the button */
 }
 
 #generate-button:hover {
     background-color: #0056b3;
+}
+
+.no-saved-message {
+    text-align: center;
+    width: 100%;
+    color: #666;
+    font-style: italic;
+}
+
+/* Hide the message if there are saved colors */
+.saved-palette-container:not(:empty) .no-saved-message {
+    display: none;
 }
