@@ -39,6 +39,15 @@ hr {
     justify-content: center;
     width: 100%; /* Allow containers to take more width */
     max-width: 900px; /* Max width for containers */
+    min-height: 170px; /* Give containers a minimum height to be drop targets */
+    padding: 10px; /* Add padding for drop zone visual */
+    border: 2px dashed transparent; /* Default border for drop zone */
+    transition: border-color 0.2s ease;
+}
+
+/* Style for valid drop zones when dragging over */
+.drag-over {
+    border-color: #007bff; /* Highlight color */
 }
 
 .color-box,
@@ -48,21 +57,30 @@ hr {
     background-color: #ccc;
     border-radius: 8px;
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
+    flex-direction: column; /* Arrange items vertically */
+    align-items: center;
+    justify-content: flex-end; /* Align content (hex code) to the bottom */
     padding: 10px;
     box-sizing: border-box;
-    /* cursor: pointer; Removed from the whole box, will add to hex code */
-    transition: transform 0.2s ease-in-out;
+    transition: transform 0.2s ease-in-out, opacity 0.2s ease; /* Add opacity transition */
     position: relative;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     overflow: hidden; /* Hide anything that might overflow */
+    cursor: grab; /* Indicate draggable */
 }
 
 .color-box:hover,
 .saved-color-box:hover {
     transform: translateY(-5px);
 }
+
+/* Style for the item being dragged */
+.dragging {
+    opacity: 0.5; /* Make the original item semi-transparent */
+    /* Optional: Add a different border or shadow */
+    /* border: 2px solid #007bff; */
+}
+
 
 .hex-code {
     background-color: rgba(0, 0, 0, 0.6);
@@ -71,11 +89,11 @@ hr {
     border-radius: 4px;
     font-size: 0.9em;
     text-transform: uppercase;
-    /* pointer-events: none; Removed so it's clickable */
-    position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative; /* Change from absolute to relative */
+    bottom: 0; /* Remove bottom positioning */
+    left: auto; /* Remove left positioning */
+    transform: none; /* Remove transform */
+    margin-top: auto; /* Push to the bottom using flexbox */
     cursor: pointer; /* Add pointer cursor to hex code */
     transition: background-color 0.2s ease, color 0.2s ease; /* Smooth transition for hover */
     z-index: 1; /* Ensure it's above the color box background */
@@ -128,7 +146,7 @@ hr {
     cursor: pointer;
     font-size: 1em;
     line-height: 1;
-    z-index: 2; /* Ensure it's above hex code */
+    z-index: 2;
     transition: background-color 0.2s ease;
 }
 
